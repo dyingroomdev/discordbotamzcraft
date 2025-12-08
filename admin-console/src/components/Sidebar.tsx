@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import GuildSwitcher from './GuildSwitcher'
 import {
   HomeIcon,
   HeartIcon,
@@ -11,9 +10,7 @@ import {
   SignalIcon,
   TrophyIcon,
   ShieldCheckIcon,
-  WrenchIcon,
   ChartBarIcon,
-  ChatBubbleLeftRightIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   ChevronLeftIcon,

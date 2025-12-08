@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import client from '@/services/api'
 import { useGuild } from '@/lib/guild'
-import { PlusIcon, MegaphoneIcon, PhotoIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, MegaphoneIcon, TrashIcon } from '@heroicons/react/24/outline'
 
 interface Broadcast {
   id: number

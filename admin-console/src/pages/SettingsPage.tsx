@@ -20,7 +20,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState<Partial<GuildSettings>>({})
 
-  const { data: settings, isLoading, refetch } = useQuery({
+  const { isLoading, refetch } = useQuery({
     queryKey: ['guild-settings', guildId],
     queryFn: async () => {
       const { data } = await apiClient.guilds.get(guildId)
