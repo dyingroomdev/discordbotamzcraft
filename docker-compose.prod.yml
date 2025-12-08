@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: discord-api
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    volumes:
+      - ./media:/app/media
+    networks:
+      - pg-network
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: discord-bot
+    restart: unless-stopped
+    environment:
+      - APP_BASE_URL=http://discord-api:4000
+    env_file:
+      - .env
+    volumes:
+      - ./media:/app/media
+    depends_on:
+      - api
+    networks:
+      - pg-network
+
+  frontend:
+    build:
+      context: ./admin-console
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=https://dc.amzcraft.xyz
+    container_name: discord-frontend
+    restart: unless-stopped
+    ports:
+      - "4002:80"
+    networks:
+      - pg-network
+
+networks:
+  pg-network:
+    external: true
