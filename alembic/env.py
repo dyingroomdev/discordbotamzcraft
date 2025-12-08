@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 import asyncio
 import sys
+import os
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -15,6 +16,10 @@ from app.models import *
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override with environment variable if set
+if os.getenv('DATABASE_URL'):
+    config.set_main_option('sqlalchemy.url', os.getenv('DATABASE_URL').replace('postgresql://', 'postgresql+asyncpg://'))
 
 target_metadata = Base.metadata
 
