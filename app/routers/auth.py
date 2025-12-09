@@ -22,13 +22,13 @@ class OAuthUrlResponse(BaseModel):
 
 @router.get("/discord/url")
 async def get_oauth_url():
-    redirect_uri = "http://localhost:3000/auth/callback"
+    redirect_uri = "https://discord.amzcraft.xyz/auth/callback"
     url = f"https://discord.com/api/oauth2/authorize?client_id={settings.discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify%20guilds"
     return OAuthUrlResponse(url=url)
 
 @router.get("/discord/callback")
 async def oauth_callback(code: str):
-    redirect_uri = "http://localhost:3000/auth/callback"
+    redirect_uri = "https://discord.amzcraft.xyz/auth/callback"
     
     async with httpx.AsyncClient() as client:
         # Exchange code for token
