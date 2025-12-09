@@ -38,7 +38,9 @@ services:
       context: ./admin-console
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=https://dc.amzcraft.xyz
+        - VITE_API_BASE=https://dc.amzcraft.xyz
+        - VITE_DISCORD_CLIENT_ID=1380210991538634762
+        - VITE_DISCORD_REDIRECT_URI=https://discord.amzcraft.xyz/auth/callback
     container_name: discord-frontend
     restart: unless-stopped
     ports:
