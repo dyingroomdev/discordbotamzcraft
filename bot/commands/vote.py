@@ -3,6 +3,7 @@ from discord.ext import commands
 import httpx
 from app.config import settings
 from bot.api import BOT_API_HEADERS
+from bot.card_images import render_vote_card
 from bot.embeds import brand_embed
 
 class VoteCommands(commands.Cog):
@@ -72,30 +73,10 @@ class VoteCommands(commands.Cog):
                     await ctx.respond("No vote links configured.", ephemeral=True)
                     return
                 
-                embed = brand_embed(
-                    "⭐ Vote for AmzCraft",
-                    "Support the server and claim your reward."
-                )
-                embed.set_footer(text=f"{len(links)} voting site{'s' if len(links) != 1 else ''} available")
-                
-                for i, link in enumerate(links, 1):
-                    vote_button = f"[Open voting page]({link['url']})"
-                    
-                    if link.get('rewards'):
-                        field_value = (
-                            f"{vote_button}\n"
-                            f"Reward: `{link['rewards']}`"
-                        )
-                    else:
-                        field_value = vote_button
-                    
-                    embed.add_field(
-                        name=f"{i}. {link['site_name']}",
-                        value=field_value,
-                        inline=False
-                    )
-                
-                await ctx.respond(embed=embed)
+                embed = discord.Embed(color=0x52991F)
+                embed.set_image(url="attachment://amzcraft-vote.png")
+                embed.description = "\n".join(f"[{i}. {link['site_name']}]({link['url']})" for i, link in enumerate(links, 1))
+                await ctx.respond(embed=embed, file=render_vote_card(links))
             else:
                 await ctx.respond("Failed to fetch vote links.", ephemeral=True)
 

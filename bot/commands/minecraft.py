@@ -2,8 +2,18 @@ import discord
 from discord.ext import commands
 from app.config import settings
 from bot.api import BOT_API_HEADERS
-from bot.embeds import brand_embed, edition_icon, edition_label, server_address
+from bot.card_images import render_connect_card, render_status_card
+from bot.embeds import server_address
 import httpx
+
+
+def _copyable_addresses(servers: list[dict]) -> str:
+    lines = ["Copyable addresses:"]
+    for server in servers:
+        label = "Java" if server.get("type") == "java" else "Bedrock"
+        lines.append(f"{label}: `{server_address(server)}`")
+    return "\n".join(lines)
+
 
 class MinecraftCommands(commands.Cog):
     def __init__(self, bot):
@@ -19,23 +29,7 @@ class MinecraftCommands(commands.Cog):
                     await ctx.respond("No Minecraft servers configured.", ephemeral=True)
                     return
                 
-                embed = brand_embed(
-                    "⛏️ AmzCraft Connect",
-                    "Choose your edition and copy the matching address."
-                )
-                embed.set_footer(text="Long-press or right-click an address to copy it")
-                
-                for server in servers:
-                    ip_address = server_address(server)
-                    field_value = f"`{ip_address}`"
-                    
-                    embed.add_field(
-                        name=f"{edition_icon(server['type'])} {edition_label(server['type'])}",
-                        value=field_value,
-                        inline=True
-                    )
-                
-                await ctx.respond(embed=embed)
+                await ctx.respond(content=_copyable_addresses(servers), file=render_connect_card(servers))
             else:
                 await ctx.respond("Failed to fetch server IPs.", ephemeral=True)
 
@@ -55,11 +49,7 @@ class MinecraftCommands(commands.Cog):
                 await ctx.respond("No Minecraft servers configured.", ephemeral=True)
                 return
             
-            embed = brand_embed(
-                "📡 AmzCraft Status",
-                "Live health for the configured Minecraft gateways."
-            )
-            embed.set_footer(text="Updated from the live status API")
+            status_items = []
             
             for server in servers:
                 # Get status for each server
@@ -70,37 +60,10 @@ class MinecraftCommands(commands.Cog):
                     params={"address": address_with_port, "type": server["type"]}
                 )
                 
-                if status_resp.status_code == 200:
-                    data = status_resp.json()
-                    if data.get("online"):
-                        players = data.get('players', {})
-                        version = data.get('version', 'Unknown')
-                        
-                        status_text = (
-                            f"🟢 Online\n"
-                            f"`{address_with_port}`\n"
-                            f"Players: `{players.get('online', 0)} / {players.get('max', 0)}`\n"
-                            f"Version: `{version}`"
-                        )
-                    else:
-                        status_text = (
-                            f"🔴 Offline\n"
-                            f"`{address_with_port}`"
-                        )
-                    
-                    embed.add_field(
-                        name=f"{edition_icon(server['type'])} {edition_label(server['type'])}",
-                        value=status_text,
-                        inline=True
-                    )
-                else:
-                    embed.add_field(
-                        name=f"{edition_icon(server['type'])} {edition_label(server['type'])}",
-                        value=f"🟡 Unavailable\n`{address_with_port}`",
-                        inline=True
-                    )
+                data = status_resp.json() if status_resp.status_code == 200 else {"online": False}
+                status_items.append({"server": server, "address": address_with_port, "status": data})
             
-            await ctx.respond(embed=embed)
+            await ctx.respond(content=_copyable_addresses(servers), file=render_status_card(status_items))
 
 def setup(bot):
     bot.add_cog(MinecraftCommands(bot))
