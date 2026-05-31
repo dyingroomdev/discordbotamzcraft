@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import client from '@/services/api'
+import { fetchApiBlobUrl } from '@/services/api'
 import { useGuild } from '@/lib/guild'
 import { EyeIcon } from '@heroicons/react/24/outline'
 
@@ -64,12 +65,18 @@ export default function WelcomeBannersPage() {
         text: banners[0].text || '',
         enabled: banners[0].enabled ?? true
       })
-      // Load existing media if available
-      if (banners[0].media_path) {
-        setMediaPreview(`http://localhost:4000${banners[0].media_path}`)
+      let objectUrl: string | null = null
+      if (banners[0].media_path && !mediaFile) {
+        fetchApiBlobUrl(banners[0].media_path).then((url) => {
+          objectUrl = url
+          setMediaPreview(url)
+        })
+      }
+      return () => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl)
       }
     }
-  }, [banners])
+  }, [banners, mediaFile])
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

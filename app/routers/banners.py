@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Form
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
@@ -16,11 +17,19 @@ class BannerCreate(BaseModel):
     text: str
     mention_channels: list = []
 
+
+def _welcome_media_path(banner_id: int) -> str:
+    return f"/api/guilds/welcome/media/{banner_id}"
+
+
+def _leave_media_path(banner_id: int) -> str:
+    return f"/api/guilds/leave/media/{banner_id}"
+
 @router.get("/{guild_id}/welcome")
 async def get_welcome_banners(guild_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(WelcomeBanner).where(WelcomeBanner.guild_id == guild_id))
     banners = result.scalars().all()
-    return [{"id": b.id, "name": b.name, "enabled": b.enabled, "text": b.text, "channel_id": b.channel_id, "media_path": f"/api/media/{b.id}" if b.media_path else None} for b in banners]
+    return [{"id": b.id, "name": b.name, "enabled": b.enabled, "text": b.text, "channel_id": b.channel_id, "media_path": _welcome_media_path(b.id) if b.media_path else None} for b in banners]
 
 @router.post("/{guild_id}/welcome")
 async def create_welcome_banner(guild_id: int, name: str = Form(), channel_id: int = Form(), text: str = Form(), media: UploadFile = File(None), db: AsyncSession = Depends(get_db)):
@@ -55,6 +64,15 @@ async def delete_welcome_banner(guild_id: int, banner_id: int, db: AsyncSession 
         await db.delete(banner)
         await db.commit()
     return {"success": True}
+
+
+@router.get("/welcome/media/{banner_id}")
+async def get_welcome_banner_media(banner_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WelcomeBanner).where(WelcomeBanner.id == banner_id))
+    banner = result.scalar_one_or_none()
+    if not banner or not banner.media_path or not os.path.exists(banner.media_path):
+        raise HTTPException(status_code=404, detail="Media not found")
+    return FileResponse(banner.media_path)
 
 class RenderRequest(BaseModel):
     user_id: int
@@ -91,7 +109,7 @@ async def render_welcome(guild_id: int, req: RenderRequest, db: AsyncSession = D
 async def get_leave_banners(guild_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(LeaveBanner).where(LeaveBanner.guild_id == guild_id))
     banners = result.scalars().all()
-    return [{"id": b.id, "name": b.name, "enabled": b.enabled, "text": b.text, "channel_id": b.channel_id, "media_path": f"/api/media/{b.id}" if b.media_path else None} for b in banners]
+    return [{"id": b.id, "name": b.name, "enabled": b.enabled, "text": b.text, "channel_id": b.channel_id, "media_path": _leave_media_path(b.id) if b.media_path else None} for b in banners]
 
 @router.post("/{guild_id}/leave")
 async def create_leave_banner(guild_id: int, name: str = Form(), channel_id: int = Form(), text: str = Form(), media: UploadFile = File(None), db: AsyncSession = Depends(get_db)):
@@ -126,6 +144,15 @@ async def delete_leave_banner(guild_id: int, banner_id: int, db: AsyncSession = 
         await db.delete(banner)
         await db.commit()
     return {"success": True}
+
+
+@router.get("/leave/media/{banner_id}")
+async def get_leave_banner_media(banner_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(LeaveBanner).where(LeaveBanner.id == banner_id))
+    banner = result.scalar_one_or_none()
+    if not banner or not banner.media_path or not os.path.exists(banner.media_path):
+        raise HTTPException(status_code=404, detail="Media not found")
+    return FileResponse(banner.media_path)
 
 @router.post("/{guild_id}/leave/preview")
 async def preview_leave(guild_id: int, req: PreviewRequest):

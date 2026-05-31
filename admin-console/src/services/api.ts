@@ -2,6 +2,29 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000'
 
+export const apiUrl = (path: string) => {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) return path
+  return `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`
+}
+
+export const fetchApiBlobUrl = async (path: string) => {
+  const headers: HeadersInit = {}
+  const token = localStorage.getItem('token')
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await fetch(apiUrl(path), {
+    headers,
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to load media: ${response.status}`)
+  }
+
+  return URL.createObjectURL(await response.blob())
+}
+
 export interface APIError {
   status: number
   code: string

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
+import { fetchApiBlobUrl } from '@/services/api'
 import { useGuild } from '@/lib/guild'
 import { ArrowUpTrayIcon, TrashIcon, PhotoIcon } from '@heroicons/react/24/outline'
 
@@ -10,6 +11,39 @@ interface Media {
   path: string
   mime: string
   uploaded_at: string
+}
+
+function MediaPreviewImage({ src, alt }: { src: string; alt: string }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    let loadedUrl: string | null = null
+
+    fetchApiBlobUrl(src)
+      .then((url) => {
+        loadedUrl = url
+        if (active) setObjectUrl(url)
+      })
+      .catch(() => {
+        if (active) setObjectUrl(null)
+      })
+
+    return () => {
+      active = false
+      if (loadedUrl) URL.revokeObjectURL(loadedUrl)
+    }
+  }, [src])
+
+  if (!objectUrl) {
+    return (
+      <div className="w-full h-40 flex items-center justify-center bg-background-secondary">
+        <PhotoIcon className="w-12 h-12 text-text-secondary" />
+      </div>
+    )
+  }
+
+  return <img src={objectUrl} alt={alt} className="w-full h-40 object-cover" />
 }
 
 export default function MediaLibraryPage() {
@@ -93,11 +127,7 @@ export default function MediaLibraryPage() {
               className="relative bg-background-primary border border-background-tertiary rounded-lg overflow-hidden group"
             >
               {item.mime.startsWith('image/') ? (
-                <img
-                  src={`http://localhost:4000/api${item.path}`}
-                  alt={item.filename}
-                  className="w-full h-40 object-cover"
-                />
+                <MediaPreviewImage src={`/api${item.path}`} alt={item.filename} />
               ) : (
                 <div className="w-full h-40 flex items-center justify-center bg-background-secondary">
                   <PhotoIcon className="w-12 h-12 text-text-secondary" />
