@@ -14,7 +14,7 @@ router = APIRouter()
 class ServerCreate(BaseModel):
     name: str
     address: str
-    port: int | None = 25565
+    port: int | None = None
     type: str = "java"
 
 @router.get("/{guild_id}/minecraft")
@@ -91,7 +91,8 @@ async def get_server_status(address: str, type: str = "java"):
         print(f"Failed to read Minecraft status cache: {exc}")
     
     url = f"https://api.mcsrvstat.us/{'bedrock/' if type == 'bedrock' else ''}3/{address}"
-    async with httpx.AsyncClient() as client:
+    headers = {"User-Agent": "AmzCraft Admin Console (https://discord.amzcraft.top)"}
+    async with httpx.AsyncClient(headers=headers) as client:
         try:
             resp = await client.get(url, timeout=5.0)
             resp.raise_for_status()

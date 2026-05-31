@@ -84,7 +84,8 @@ class MinecraftCommands(commands.Cog):
                     address_with_port = server['address']
                 
                 status_resp = await client.get(
-                    f"{settings.app_base_url}/api/status?address={address_with_port}&type={server['type']}"
+                    f"{settings.app_base_url}/api/status",
+                    params={"address": address_with_port, "type": server["type"]}
                 )
                 
                 if status_resp.status_code == 200:

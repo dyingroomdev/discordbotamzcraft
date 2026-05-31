@@ -41,7 +41,7 @@ export default function ServerStatusPage() {
       await Promise.all(
         servers.map(async (server) => {
           try {
-            const addressWithPort = server.port && server.port !== 25565 
+            const addressWithPort = server.port && (server.type === 'bedrock' || server.port !== 25565)
               ? `${server.address}:${server.port}` 
               : server.address
             const { data } = await apiClient.minecraft.status(addressWithPort, server.type)
@@ -98,7 +98,7 @@ export default function ServerStatusPage() {
                   <div>
                     <h3 className="font-semibold text-lg">{server.name}</h3>
                     <p className="text-sm text-text-secondary font-mono">
-                      {server.address}:{server.port}
+                      {server.port ? `${server.address}:${server.port}` : server.address}
                     </p>
                   </div>
                   {status?.online ? (

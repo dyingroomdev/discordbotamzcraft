@@ -148,7 +148,7 @@ export const apiClient = {
       client.put(`/guilds/${guildId}/minecraft/${serverId}`, data),
     delete: (guildId: string, serverId: number) => client.delete(`/guilds/${guildId}/minecraft/${serverId}`),
     status: (address: string, type: 'java' | 'bedrock') =>
-      client.get(`/status?address=${address}&type=${type}`),
+      client.get('/status', { params: { address, type } }),
     summary: () => client.get('/status/minecraft/summary'),
   },
 
