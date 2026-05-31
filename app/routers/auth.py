@@ -4,6 +4,7 @@ from app.config import settings
 import httpx
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
+from urllib.parse import urlencode
 
 router = APIRouter()
 
@@ -22,14 +23,17 @@ class OAuthUrlResponse(BaseModel):
 
 @router.get("/discord/url")
 async def get_oauth_url():
-    redirect_uri = "https://discord.amzcraft.top/auth/callback"
-    url = f"https://discord.com/api/oauth2/authorize?client_id={settings.discord_client_id}&redirect_uri={redirect_uri}&response_type=code&scope=identify%20guilds"
+    params = {
+        "client_id": settings.discord_client_id,
+        "redirect_uri": settings.discord_redirect_uri,
+        "response_type": "code",
+        "scope": "identify guilds",
+    }
+    url = f"https://discord.com/api/oauth2/authorize?{urlencode(params)}"
     return OAuthUrlResponse(url=url)
 
 @router.get("/discord/callback")
 async def oauth_callback(code: str):
-    redirect_uri = "https://discord.amzcraft.top/auth/callback"
-    
     async with httpx.AsyncClient() as client:
         # Exchange code for token
         token_resp = await client.post(
@@ -39,12 +43,13 @@ async def oauth_callback(code: str):
                 "client_secret": settings.discord_client_secret,
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": redirect_uri
+                "redirect_uri": settings.discord_redirect_uri
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         
         if token_resp.status_code != 200:
+            print(f"Discord token exchange failed: {token_resp.status_code} {token_resp.text}")
             raise HTTPException(status_code=400, detail="Failed to exchange code")
         
         token_data = token_resp.json()

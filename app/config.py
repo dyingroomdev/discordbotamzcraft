@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     discord_client_id: str
     discord_client_secret: str
     discord_admin_guild_id: str = "1118248694236590131"
+    discord_redirect_uri: str = "https://discord.amzcraft.top/auth/callback"
     app_base_url: str
     media_dir: str = "./media"
     s3_enabled: bool = False
