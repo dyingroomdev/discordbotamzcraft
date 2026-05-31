@@ -61,23 +61,23 @@ async def oauth_callback(code: str):
         
         user_data = user_resp.json()
         
-        # Check if user has Administrator permission in AmzCraft server
-        AMZCRAFT_GUILD_ID = "1118248694236590131"
+        # Check if user has Administrator permission in the configured admin server
+        admin_guild_id = settings.discord_admin_guild_id
         
         # Get guild member using bot token
         member_resp = await client.get(
-            f"https://discord.com/api/guilds/{AMZCRAFT_GUILD_ID}/members/{user_data['id']}",
+            f"https://discord.com/api/guilds/{admin_guild_id}/members/{user_data['id']}",
             headers={"Authorization": f"Bot {settings.discord_bot_token}"}
         )
         
         if member_resp.status_code != 200:
-            raise HTTPException(status_code=403, detail="You must be a member of AmzCraft server")
+            raise HTTPException(status_code=403, detail="You must be a member of the configured admin server")
         
         member_data = member_resp.json()
         
         # Get guild to check owner
         guild_resp = await client.get(
-            f"https://discord.com/api/guilds/{AMZCRAFT_GUILD_ID}",
+            f"https://discord.com/api/guilds/{admin_guild_id}",
             headers={"Authorization": f"Bot {settings.discord_bot_token}"}
         )
         
@@ -92,7 +92,7 @@ async def oauth_callback(code: str):
         else:
             # Get guild roles
             roles_resp = await client.get(
-                f"https://discord.com/api/guilds/{AMZCRAFT_GUILD_ID}/roles",
+                f"https://discord.com/api/guilds/{admin_guild_id}/roles",
                 headers={"Authorization": f"Bot {settings.discord_bot_token}"}
             )
             
