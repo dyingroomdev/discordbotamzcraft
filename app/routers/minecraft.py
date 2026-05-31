@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
 from app.database import get_db
 from app.models import MinecraftServer
@@ -18,25 +19,40 @@ class ServerCreate(BaseModel):
 
 @router.get("/{guild_id}/minecraft")
 async def get_servers(guild_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(MinecraftServer).where(MinecraftServer.guild_id == guild_id))
-    servers = result.scalars().all()
+    try:
+        result = await db.execute(select(MinecraftServer).where(MinecraftServer.guild_id == guild_id))
+        servers = result.scalars().all()
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        print(f"Failed to list Minecraft servers for guild {guild_id}: {exc}")
+        return []
     return [{"id": s.id, "name": s.name, "address": s.address, "port": s.port, "type": s.type} for s in servers]
 
 @router.post("/{guild_id}/minecraft")
 async def add_server(guild_id: int, data: ServerCreate, db: AsyncSession = Depends(get_db)):
     server = MinecraftServer(guild_id=guild_id, name=data.name, address=data.address, port=data.port, type=data.type)
-    db.add(server)
-    await db.commit()
-    await db.refresh(server)
+    try:
+        db.add(server)
+        await db.commit()
+        await db.refresh(server)
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        print(f"Failed to add Minecraft server for guild {guild_id}: {exc}")
+        raise HTTPException(status_code=500, detail="Failed to save Minecraft server")
     return {"id": server.id}
 
 @router.delete("/{guild_id}/minecraft/{server_id}")
 async def delete_server(guild_id: int, server_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(MinecraftServer).where(MinecraftServer.id == server_id, MinecraftServer.guild_id == guild_id))
-    server = result.scalar_one_or_none()
-    if server:
-        await db.delete(server)
-        await db.commit()
+    try:
+        result = await db.execute(select(MinecraftServer).where(MinecraftServer.id == server_id, MinecraftServer.guild_id == guild_id))
+        server = result.scalar_one_or_none()
+        if server:
+            await db.delete(server)
+            await db.commit()
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        print(f"Failed to delete Minecraft server {server_id} for guild {guild_id}: {exc}")
+        raise HTTPException(status_code=500, detail="Failed to delete Minecraft server")
     return {"success": True}
 
 @router.get(

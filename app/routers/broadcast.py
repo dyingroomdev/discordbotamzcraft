@@ -89,5 +89,9 @@ async def delete_broadcast(guild_id: int, broadcast_id: int, db: AsyncSession = 
 async def get_broadcast_queue(db: AsyncSession = Depends(get_db)):
     from app.utils.redis_client import get_redis
     redis = await get_redis()
-    queue_length = await redis.llen("broadcast:queue")
-    return {"pending": queue_length, "processing": 0}
+    try:
+        queue_length = await redis.llen("broadcast:queue")
+    except Exception as exc:
+        print(f"Failed to read broadcast queue: {exc}")
+        queue_length = 0
+    return {"pending": queue_length, "processing": 0, "completedToday": 0}

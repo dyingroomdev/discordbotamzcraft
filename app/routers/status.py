@@ -53,11 +53,19 @@ async def minecraft_summary(db: AsyncSession = Depends(get_db)):
     from app.models import MinecraftServer
     from sqlalchemy import select, func
     
-    result = await db.execute(select(func.count(MinecraftServer.id)))
-    total = result.scalar() or 0
+    try:
+        result = await db.execute(select(func.count(MinecraftServer.id)))
+        total = result.scalar() or 0
+    except Exception as exc:
+        print(f"Failed to read Minecraft summary: {exc}")
+        total = 0
     
     return {
         "total_servers": total,
         "online_servers": 0,
-        "total_players": 0
+        "total_players": 0,
+        "totalServers": total,
+        "onlineServers": 0,
+        "totalPlayers": 0,
+        "problematicServers": []
     }
