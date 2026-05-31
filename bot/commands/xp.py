@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from app.config import settings
 from bot.api import BOT_API_HEADERS
+from bot.embeds import brand_embed
 import httpx
 
 class XPCommands(commands.Cog):
@@ -14,11 +15,11 @@ class XPCommands(commands.Cog):
             resp = await client.get(f"{settings.app_base_url}/api/guilds/{ctx.guild.id}/xp/top?limit={limit}")
             data = resp.json()
         
-        embed = discord.Embed(title="🏆 XP Leaderboard", color=discord.Color.gold())
+        embed = brand_embed("XP Leaderboard", "Top active members by earned XP.", color=0xFEE75C)
         for i, user in enumerate(data, 1):
             member = ctx.guild.get_member(user["user_id"])
             name = member.display_name if member else f"User {user['user_id']}"
-            embed.add_field(name=f"{i}. {name}", value=f"Level {user['level']} - {user['xp']} XP", inline=False)
+            embed.add_field(name=f"{i}. {name}", value=f"Level `{user['level']}` • `{user['xp']} XP`", inline=False)
         
         await ctx.respond(embed=embed)
 

@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from app.config import settings
 from bot.api import BOT_API_HEADERS
+from bot.embeds import brand_embed, edition_label, server_address
 import httpx
 
 class MinecraftCommands(commands.Cog):
@@ -18,31 +19,21 @@ class MinecraftCommands(commands.Cog):
                     await ctx.respond("No Minecraft servers configured.", ephemeral=True)
                     return
                 
-                embed = discord.Embed(
-                    title="🎮 Minecraft Server IPs",
-                    description="Connect to AmzCraft servers using these IPs",
-                    color=0x52991f
+                embed = brand_embed(
+                    "AmzCraft Server Addresses",
+                    "Choose the edition you play on and copy the address."
                 )
-                embed.set_footer(text="Click to copy • Right-click IP to copy")
+                embed.set_footer(text="Tip: long-press or right-click an address to copy it")
                 
                 for server in servers:
-                    port = server.get('port')
-                    if port and (server['type'] == 'bedrock' or port != 25565):
-                        ip_address = f"{server['address']}:{port}"
-                    else:
-                        ip_address = server['address']
-                    
-                    type_badge = "☕ Java Edition" if server['type'] == 'java' else "📱 Bedrock Edition"
-                    
+                    ip_address = server_address(server)
                     field_value = (
-                        f"```ansi\n"
-                        f"\u001b[1;32m{ip_address}\u001b[0m\n"
-                        f"```\n"
-                        f"📋 **Copy this IP to connect**"
+                        f"**Address**\n"
+                        f"`{ip_address}`"
                     )
                     
                     embed.add_field(
-                        name=f"━━━━━━━━━━━━━━━━━━━━\n{type_badge}\n**{server['name']}**",
+                        name=edition_label(server["type"]),
                         value=field_value,
                         inline=False
                     )
@@ -67,21 +58,15 @@ class MinecraftCommands(commands.Cog):
                 await ctx.respond("No Minecraft servers configured.", ephemeral=True)
                 return
             
-            embed = discord.Embed(
-                title="🎮 Minecraft Server Status",
-                description="Live status of all AmzCraft servers",
-                color=0x52991f
+            embed = brand_embed(
+                "AmzCraft Server Status",
+                "Live status for configured Minecraft servers."
             )
-            embed.set_footer(text="Updates every 60 seconds")
+            embed.set_footer(text="Updated from the live server status API")
             
             for server in servers:
                 # Get status for each server
-                port = server.get('port')
-                # Include port if it's bedrock or not default Java port
-                if port and (server['type'] == 'bedrock' or port != 25565):
-                    address_with_port = f"{server['address']}:{port}"
-                else:
-                    address_with_port = server['address']
+                address_with_port = server_address(server)
                 
                 status_resp = await client.get(
                     f"{settings.app_base_url}/api/status",
@@ -90,38 +75,31 @@ class MinecraftCommands(commands.Cog):
                 
                 if status_resp.status_code == 200:
                     data = status_resp.json()
-                    type_badge = "☕ Java Edition" if server['type'] == 'java' else "📱 Bedrock Edition"
-                    
                     if data.get("online"):
                         players = data.get('players', {})
                         version = data.get('version', 'Unknown')
-                        port_text = f":{server['port']}" if server.get('port') and server['port'] != 25565 else ""
                         
                         status_text = (
-                            f"```ansi\n"
-                            f"\u001b[1;32m● ONLINE\u001b[0m\n"
-                            f"```\n"
-                            f"**IP:** `{server['address']}{port_text}`\n"
-                            f"**Players:** `{players.get('online', 0)}/{players.get('max', 0)}`\n"
+                            f"**Status:** Online\n"
+                            f"**Address:** `{address_with_port}`\n"
+                            f"**Players:** `{players.get('online', 0)} / {players.get('max', 0)}`\n"
                             f"**Version:** `{version}`"
                         )
                     else:
                         status_text = (
-                            f"```ansi\n"
-                            f"\u001b[1;31m● OFFLINE\u001b[0m\n"
-                            f"```\n"
-                            f"**IP:** `{server['address']}`"
+                            f"**Status:** Offline\n"
+                            f"**Address:** `{address_with_port}`"
                         )
                     
                     embed.add_field(
-                        name=f"━━━━━━━━━━━━━━━━━━━━\n{type_badge}\n**{server['name']}**",
+                        name=edition_label(server["type"]),
                         value=status_text,
                         inline=False
                     )
                 else:
                     embed.add_field(
-                        name=f"**{server['name']}**",
-                        value="```ansi\n\u001b[1;33m⚠ Failed to check status\u001b[0m\n```",
+                        name=edition_label(server["type"]),
+                        value=f"**Status:** Unavailable\n**Address:** `{address_with_port}`",
                         inline=False
                     )
             

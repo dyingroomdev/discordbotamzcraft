@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from app.config import settings
 from bot.api import BOT_API_HEADERS
+from bot.embeds import brand_embed
 import httpx
 
 class ModerationCommands(commands.Cog):
@@ -27,7 +28,8 @@ class ModerationCommands(commands.Cog):
         # Execute action
         if resp.status_code == 200:
             await member.ban(reason=reason)
-            await ctx.respond(f"✅ Banned {member.mention}")
+            embed = brand_embed("Member Banned", f"{member.mention} was banned.\n**Reason:** {reason}", color=0xED4245)
+            await ctx.respond(embed=embed)
         else:
             await ctx.respond("❌ Failed to log action", ephemeral=True)
 
@@ -47,7 +49,8 @@ class ModerationCommands(commands.Cog):
         # Timeout the member
         from datetime import timedelta
         await member.timeout_for(timedelta(minutes=duration), reason=reason)
-        await ctx.respond(f"✅ Muted {member.mention} for {duration} minutes")
+        embed = brand_embed("Member Muted", f"{member.mention} was muted for `{duration}` minutes.\n**Reason:** {reason}", color=0xFEE75C)
+        await ctx.respond(embed=embed)
 
     @discord.slash_command(name="purge", description="Delete messages (Admin/Moderator only)", guild_ids=[1118248694236590131])
     async def purge(self, ctx, limit: int):
@@ -56,7 +59,8 @@ class ModerationCommands(commands.Cog):
             return
         await ctx.defer(ephemeral=True)
         await ctx.channel.purge(limit=limit)
-        await ctx.followup.send(f"🗑️ Deleted {limit} messages")
+        embed = brand_embed("Messages Purged", f"Deleted `{limit}` messages.", color=0x57F287)
+        await ctx.followup.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(ModerationCommands(bot))
