@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from app.config import settings
+from bot.api import BOT_API_HEADERS
 import httpx
 
 class ModerationCommands(commands.Cog):
@@ -18,7 +19,7 @@ class ModerationCommands(commands.Cog):
             await ctx.respond("❌ You don't have permission to use this command.", ephemeral=True)
             return
         # Log to API first
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
             resp = await client.post(
                 f"{settings.app_base_url}/api/guilds/{ctx.guild.id}/moderation/action",
                 json={"action": "ban", "target_id": member.id, "mod_id": ctx.author.id, "reason": reason}
@@ -37,7 +38,7 @@ class ModerationCommands(commands.Cog):
             return
         
         # Log to API
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
             await client.post(
                 f"{settings.app_base_url}/api/guilds/{ctx.guild.id}/moderation/action",
                 json={"action": "mute", "target_id": member.id, "mod_id": ctx.author.id, "reason": reason}

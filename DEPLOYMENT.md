@@ -3,24 +3,21 @@
 ## Prerequisites
 - Docker and Docker Compose installed
 - Domain names configured:
-  - `dc.amzcraft.xyz` → Backend API
-  - `discord.amzcraft.xyz` → Frontend
+  - `dc.amzcraft.top` → Backend API
+  - `discord.amzcraft.top` → Frontend
 - SSL certificates (Let's Encrypt recommended)
-- Docker network `pg-network` created
+- Docker network `proxy` created
 
 ## Setup Steps
 
 ### 1. Create Docker Network
 ```bash
-docker network create pg-network
+docker network create proxy
 ```
 
 ### 2. Configure Environment Variables
 ```bash
-# Copy and edit production environment file
-cp .env.production .env
-
-# Update these values in .env:
+# Update these values in .env.production:
 # - DISCORD_BOT_TOKEN
 # - DISCORD_CLIENT_ID
 # - DISCORD_CLIENT_SECRET
@@ -45,11 +42,11 @@ docker exec -it discord-api alembic upgrade head
 
 ### 5. Configure Reverse Proxy (Nginx/Caddy)
 
-#### For Backend API (dc.amzcraft.xyz)
+#### For Backend API (dc.amzcraft.top)
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name dc.amzcraft.xyz;
+    server_name dc.amzcraft.top;
 
     ssl_certificate /path/to/cert.pem;
     ssl_certificate_key /path/to/key.pem;
@@ -68,11 +65,11 @@ server {
 }
 ```
 
-#### For Frontend (discord.amzcraft.xyz)
+#### For Frontend (discord.amzcraft.top)
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name discord.amzcraft.xyz;
+    server_name discord.amzcraft.top;
 
     ssl_certificate /path/to/cert.pem;
     ssl_certificate_key /path/to/key.pem;
@@ -90,7 +87,7 @@ server {
 
 ### 6. Discord OAuth Configuration
 Update Discord Developer Portal:
-- Redirect URI: `https://discord.amzcraft.xyz/auth/callback`
+- Redirect URI: `https://discord.amzcraft.top/auth/callback`
 
 ## Service Management
 
@@ -151,7 +148,7 @@ docker stats
 ## Troubleshooting
 
 ### Bot Not Connecting
-- Check `DISCORD_BOT_TOKEN` in `.env`
+- Check `DISCORD_BOT_TOKEN` in `.env.production`
 - Verify bot has proper intents enabled in Discord Developer Portal
 - Check bot logs: `docker logs discord-bot`
 

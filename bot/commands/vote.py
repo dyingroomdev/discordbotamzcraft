@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import httpx
 from app.config import settings
+from bot.api import BOT_API_HEADERS
 
 class VoteCommands(commands.Cog):
     def __init__(self, bot):
@@ -63,7 +64,7 @@ class VoteCommands(commands.Cog):
 
     @discord.slash_command(name="vote", description="Get server voting links", guild_ids=[1118248694236590131])
     async def vote(self, ctx):
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
             resp = await client.get(f"{settings.app_base_url}/api/guilds/{ctx.guild.id}/vote")
             if resp.status_code == 200:
                 links = resp.json()

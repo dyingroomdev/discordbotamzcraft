@@ -10,8 +10,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:4002",
-        "https://discord.amzcraft.xyz",
-        "https://dc.amzcraft.xyz"
+        "https://discord.amzcraft.top",
+        "https://dc.amzcraft.top"
     ],
     allow_credentials=True,
     allow_methods=["*"],

@@ -1,10 +1,12 @@
 import discord
 from discord.ext import commands, tasks
 from app.config import settings
+from bot.api import BOT_API_HEADERS
 import httpx
 import os
 import asyncio
 import json
+import re
 import redis.asyncio as redis
 
 
@@ -15,6 +17,67 @@ intents.guilds = True
 
 bot = commands.Bot(intents=intents, allowed_mentions=discord.AllowedMentions(everyone=True, roles=True, users=True))
 redis_client = redis.from_url(settings.redis_url, decode_responses=True)
+
+MOD_ROLE_NAMES = {"admin", "administrator", "moderator", "mod"}
+LINK_PATTERN = re.compile(
+    r"(?i)\b(?:"
+    r"https?://[^\s<]+|"
+    r"www\.[^\s<]+|"
+    r"discord(?:app)?\.com/invite/[^\s<]+|"
+    r"discord\.gg/[^\s<]+|"
+    r"[\w.-]+\.(?:com|net|org|xyz|top|gg|io|co|me|dev|app|site|online|store|info|biz|club|shop|link|live|tv|to|in|us|uk|bd)(?:/[^\s<]*)?"
+    r")"
+)
+
+
+def has_admin_or_mod_role(member: discord.Member) -> bool:
+    role_names = {role.name.lower() for role in getattr(member, "roles", [])}
+    permissions = getattr(member, "guild_permissions", None)
+    return (
+        bool(role_names & MOD_ROLE_NAMES)
+        or bool(getattr(permissions, "administrator", False))
+        or bool(getattr(permissions, "manage_messages", False))
+    )
+
+
+def contains_link(content: str) -> bool:
+    return bool(content and LINK_PATTERN.search(content))
+
+
+async def remove_unauthorized_link(message: discord.Message) -> bool:
+    if not message.guild or not contains_link(message.content):
+        return False
+    if has_admin_or_mod_role(message.author):
+        return False
+
+    try:
+        await message.delete()
+    except discord.Forbidden:
+        print(f"Missing permission to delete link from {message.author} in {message.guild}")
+    except discord.HTTPException as exc:
+        print(f"Failed to delete link message: {exc}")
+
+    warning = f"{message.author.mention}, links are only allowed for admins and moderators."
+    try:
+        await message.channel.send(warning, delete_after=8)
+    except discord.HTTPException as exc:
+        print(f"Failed to send link moderation warning: {exc}")
+
+    async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
+        try:
+            await client.post(
+                f"{settings.app_base_url}/api/guilds/{message.guild.id}/moderation/action",
+                json={
+                    "action": "link_delete",
+                    "target_id": message.author.id,
+                    "mod_id": bot.user.id if bot.user else 0,
+                    "reason": "Posted a link without admin or moderator role",
+                },
+            )
+        except httpx.HTTPError as exc:
+            print(f"Failed to log link moderation action: {exc}")
+
+    return True
 
 @tasks.loop(seconds=30)
 async def update_bot_status():
@@ -55,7 +118,7 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
         channels_map = {f"#{ch.name}": ch.mention for ch in member.guild.channels if hasattr(ch, 'mention')}
         
         render_resp = await client.post(
@@ -97,7 +160,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_member_join_old(member):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
         # Build channel mentions map
         channels_map = {f"#{ch.name}": ch.mention for ch in member.guild.channels if hasattr(ch, 'mention')}
         
@@ -138,7 +201,7 @@ async def on_member_join_old(member):
 
 @bot.event
 async def on_member_remove(member):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
         channels_map = {f"#{ch.name}": ch.mention for ch in member.guild.channels if hasattr(ch, 'mention')}
         
         render_resp = await client.post(
@@ -182,8 +245,10 @@ async def on_member_remove(member):
 async def on_message(message):
     if message.author.bot:
         return
+    if await remove_unauthorized_link(message):
+        return
     # Increment XP
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
         await client.post(
             f"{settings.app_base_url}/api/guilds/{message.guild.id}/xp/increment",
             json={"user_id": message.author.id, "amount": 10}

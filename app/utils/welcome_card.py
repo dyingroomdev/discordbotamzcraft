@@ -7,7 +7,7 @@ def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
-async def generate_welcome_card(member_name: str, member_avatar_url: str, member_count: int, welcome_text: str = None, banner_path: str = None, server_ip: str = "AMZCRAFT.XYZ:25565"):
+async def generate_welcome_card(member_name: str, member_avatar_url: str, member_count: int, welcome_text: str = None, banner_path: str = None, server_ip: str = "AMZCRAFT.TOP:25565"):
     width, height = 450, 200
     img = Image.new('RGB', (width, height), (47, 49, 54))
     draw = ImageDraw.Draw(img)

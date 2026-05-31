@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from app.config import settings
+from bot.api import BOT_API_HEADERS
 import httpx
 
 class MinecraftCommands(commands.Cog):
@@ -9,7 +10,7 @@ class MinecraftCommands(commands.Cog):
 
     @discord.slash_command(name="ip", description="Get Minecraft server IPs", guild_ids=[1118248694236590131])
     async def ip(self, ctx):
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
             resp = await client.get(f"{settings.app_base_url}/api/guilds/{ctx.guild.id}/minecraft")
             if resp.status_code == 200:
                 servers = resp.json()
@@ -54,7 +55,7 @@ class MinecraftCommands(commands.Cog):
     async def status(self, ctx):
         await ctx.defer()
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
             # Get all configured servers
             servers_resp = await client.get(f"{settings.app_base_url}/api/guilds/{ctx.guild.id}/minecraft")
             if servers_resp.status_code != 200:

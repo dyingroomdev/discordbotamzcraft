@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from app.config import settings
+from bot.api import BOT_API_HEADERS
 import httpx
 
 class XPCommands(commands.Cog):
@@ -9,7 +10,7 @@ class XPCommands(commands.Cog):
 
     @discord.slash_command(name="leaderboard", description="Show XP leaderboard", guild_ids=[1118248694236590131])
     async def leaderboard(self, ctx, limit: int = 10):
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(headers=BOT_API_HEADERS) as client:
             resp = await client.get(f"{settings.app_base_url}/api/guilds/{ctx.guild.id}/xp/top?limit={limit}")
             data = resp.json()
         
