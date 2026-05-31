@@ -83,14 +83,28 @@ async def delete_server(guild_id: int, server_id: int, db: AsyncSession = Depend
 async def get_server_status(address: str, type: str = "java"):
     """Query Minecraft server status with caching (TTL 60s)"""
     cache_key = f"mc_status:{type}:{address}"
-    cached = await get_cached(cache_key)
-    if cached:
-        return json.loads(cached)
+    try:
+        cached = await get_cached(cache_key)
+        if cached:
+            return json.loads(cached)
+    except Exception as exc:
+        print(f"Failed to read Minecraft status cache: {exc}")
     
     url = f"https://api.mcsrvstat.us/{'bedrock/' if type == 'bedrock' else ''}3/{address}"
     async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=5.0)
-        data = resp.json()
+        try:
+            resp = await client.get(url, timeout=5.0)
+            resp.raise_for_status()
+            data = resp.json()
+        except httpx.HTTPError as exc:
+            print(f"Failed to query Minecraft status for {address}: {exc}")
+            return {
+                "online": False,
+                "players": {"online": 0, "max": 0},
+                "motd": "",
+                "version": "",
+                "icon_url": ""
+            }
     
     result = {
         "online": data.get("online", False),
@@ -99,5 +113,8 @@ async def get_server_status(address: str, type: str = "java"):
         "version": data.get("version", ""),
         "icon_url": data.get("icon", "")
     }
-    await set_cached(cache_key, json.dumps(result), ttl=60)
+    try:
+        await set_cached(cache_key, json.dumps(result), ttl=60)
+    except Exception as exc:
+        print(f"Failed to write Minecraft status cache: {exc}")
     return result

@@ -20,7 +20,7 @@ export default function MinecraftServersPage() {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    port: 25565,
+    port: '',
     type: 'java' as 'java' | 'bedrock'
   })
   const queryClient = useQueryClient()
@@ -35,11 +35,14 @@ export default function MinecraftServersPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiClient.minecraft.create(guildId, data)
+      return await apiClient.minecraft.create(guildId, {
+        ...data,
+        port: data.port === '' ? undefined : Number(data.port),
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['minecraft-servers', guildId] })
-      setFormData({ name: '', address: '', port: 25565, type: 'java' })
+      setFormData({ name: '', address: '', port: '', type: 'java' })
       setShowForm(false)
     }
   })
@@ -111,8 +114,8 @@ export default function MinecraftServersPage() {
               <input
                 type="number"
                 value={formData.port}
-                onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 25565 })}
-                placeholder="25565"
+                onChange={(e) => setFormData({ ...formData, port: e.target.value })}
+                placeholder="Default"
                 className="w-full px-3 py-2 bg-background-secondary border border-background-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
               />
             </div>
