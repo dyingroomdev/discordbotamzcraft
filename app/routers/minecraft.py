@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel
 from app.database import get_db
-from app.models import MinecraftServer
+from app.models import Guild, MinecraftServer
 from app.utils.redis_client import get_cached, set_cached
 import httpx
 import json
@@ -32,6 +32,10 @@ async def get_servers(guild_id: int, db: AsyncSession = Depends(get_db)):
 async def add_server(guild_id: int, data: ServerCreate, db: AsyncSession = Depends(get_db)):
     server = MinecraftServer(guild_id=guild_id, name=data.name, address=data.address, port=data.port, type=data.type)
     try:
+        guild = await db.get(Guild, guild_id)
+        if not guild:
+            db.add(Guild(id=guild_id, name=f"Guild {guild_id}"))
+            await db.flush()
         db.add(server)
         await db.commit()
         await db.refresh(server)
