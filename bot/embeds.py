@@ -25,7 +25,11 @@ def server_address(server: dict) -> str:
 
 
 def edition_label(server_type: str) -> str:
-    return "Java Edition" if server_type == "java" else "Bedrock Edition"
+    return "Java" if server_type == "java" else "Bedrock"
+
+
+def edition_icon(server_type: str) -> str:
+    return "☕" if server_type == "java" else "📱"
 
 
 def status_label(online: bool) -> str:

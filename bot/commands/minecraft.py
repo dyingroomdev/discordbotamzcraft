@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from app.config import settings
 from bot.api import BOT_API_HEADERS
-from bot.embeds import brand_embed, edition_label, server_address
+from bot.embeds import brand_embed, edition_icon, edition_label, server_address
 import httpx
 
 class MinecraftCommands(commands.Cog):
@@ -20,22 +20,19 @@ class MinecraftCommands(commands.Cog):
                     return
                 
                 embed = brand_embed(
-                    "AmzCraft Server Addresses",
-                    "Choose the edition you play on and copy the address."
+                    "⛏️ AmzCraft Connect",
+                    "Choose your edition and copy the matching address."
                 )
-                embed.set_footer(text="Tip: long-press or right-click an address to copy it")
+                embed.set_footer(text="Long-press or right-click an address to copy it")
                 
                 for server in servers:
                     ip_address = server_address(server)
-                    field_value = (
-                        f"**Address**\n"
-                        f"`{ip_address}`"
-                    )
+                    field_value = f"`{ip_address}`"
                     
                     embed.add_field(
-                        name=edition_label(server["type"]),
+                        name=f"{edition_icon(server['type'])} {edition_label(server['type'])}",
                         value=field_value,
-                        inline=False
+                        inline=True
                     )
                 
                 await ctx.respond(embed=embed)
@@ -59,10 +56,10 @@ class MinecraftCommands(commands.Cog):
                 return
             
             embed = brand_embed(
-                "AmzCraft Server Status",
-                "Live status for configured Minecraft servers."
+                "📡 AmzCraft Status",
+                "Live health for the configured Minecraft gateways."
             )
-            embed.set_footer(text="Updated from the live server status API")
+            embed.set_footer(text="Updated from the live status API")
             
             for server in servers:
                 # Get status for each server
@@ -80,27 +77,27 @@ class MinecraftCommands(commands.Cog):
                         version = data.get('version', 'Unknown')
                         
                         status_text = (
-                            f"**Status:** Online\n"
-                            f"**Address:** `{address_with_port}`\n"
-                            f"**Players:** `{players.get('online', 0)} / {players.get('max', 0)}`\n"
-                            f"**Version:** `{version}`"
+                            f"🟢 Online\n"
+                            f"`{address_with_port}`\n"
+                            f"Players: `{players.get('online', 0)} / {players.get('max', 0)}`\n"
+                            f"Version: `{version}`"
                         )
                     else:
                         status_text = (
-                            f"**Status:** Offline\n"
-                            f"**Address:** `{address_with_port}`"
+                            f"🔴 Offline\n"
+                            f"`{address_with_port}`"
                         )
                     
                     embed.add_field(
-                        name=edition_label(server["type"]),
+                        name=f"{edition_icon(server['type'])} {edition_label(server['type'])}",
                         value=status_text,
-                        inline=False
+                        inline=True
                     )
                 else:
                     embed.add_field(
-                        name=edition_label(server["type"]),
-                        value=f"**Status:** Unavailable\n**Address:** `{address_with_port}`",
-                        inline=False
+                        name=f"{edition_icon(server['type'])} {edition_label(server['type'])}",
+                        value=f"🟡 Unavailable\n`{address_with_port}`",
+                        inline=True
                     )
             
             await ctx.respond(embed=embed)
