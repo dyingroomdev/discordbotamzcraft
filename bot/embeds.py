@@ -1,4 +1,5 @@
 import discord
+from datetime import datetime, timezone
 
 
 BRAND_COLOR = 0x52991F
@@ -9,6 +10,8 @@ ERROR_COLOR = 0xED4245
 
 def brand_embed(title: str, description: str | None = None, color: int = BRAND_COLOR) -> discord.Embed:
     embed = discord.Embed(title=title, description=description, color=color)
+    embed.timestamp = datetime.now(timezone.utc)
+    embed.set_author(name="AmzCraft")
     embed.set_footer(text="AmzCraft Network")
     return embed
 
@@ -33,4 +36,8 @@ def edition_icon(server_type: str) -> str:
 
 
 def status_label(online: bool) -> str:
-    return "ONLINE" if online else "OFFLINE"
+    return "Online" if online else "Offline"
+
+
+def status_icon(online: bool) -> str:
+    return "🟢" if online else "🔴"

@@ -3,7 +3,6 @@ from discord.ext import commands
 import httpx
 from app.config import settings
 from bot.api import BOT_API_HEADERS
-from bot.card_images import render_vote_card
 from bot.embeds import brand_embed
 
 class VoteCommands(commands.Cog):
@@ -13,8 +12,8 @@ class VoteCommands(commands.Cog):
     @discord.slash_command(name="help", description="Show all available commands", guild_ids=[1118248694236590131])
     async def help(self, ctx):
         embed = brand_embed(
-            "AmzCraft Bot Commands",
-            "Available commands for server members and staff."
+            "Command Center",
+            "Core commands for AmzCraft members and staff."
         )
         
         # General Commands
@@ -73,10 +72,24 @@ class VoteCommands(commands.Cog):
                     await ctx.respond("No vote links configured.", ephemeral=True)
                     return
                 
-                embed = discord.Embed(color=0x52991F)
-                embed.set_image(url="attachment://amzcraft-vote.png")
-                embed.description = "\n".join(f"[{i}. {link['site_name']}]({link['url']})" for i, link in enumerate(links, 1))
-                await ctx.respond(embed=embed, file=render_vote_card(links))
+                embed = brand_embed(
+                    "Vote Rewards",
+                    "Support AmzCraft and claim your configured reward."
+                )
+                embed.set_footer(text=f"AmzCraft Network • {len(links)} voting site{'s' if len(links) != 1 else ''} configured")
+                
+                for i, link in enumerate(links, 1):
+                    value = f"[Open voting page]({link['url']})"
+                    if link.get("rewards"):
+                        value += f"\nReward: **{link['rewards']}**"
+                    
+                    embed.add_field(
+                        name=f"{i}. {link['site_name']}",
+                        value=value,
+                        inline=False
+                    )
+                
+                await ctx.respond(embed=embed)
             else:
                 await ctx.respond("Failed to fetch vote links.", ephemeral=True)
 
